@@ -69,7 +69,7 @@ contract Vault {
         
         // TODO:
         // Calculate the amount based on bought exch-rate
-        // Implement unlocking period
+        // Add to unlocks
         // Call event
     }
 

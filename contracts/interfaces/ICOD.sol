@@ -5,6 +5,7 @@ import "./IERC20.sol";
 
 interface ICOD is IERC20 {
     function initialSupply() external view returns (uint256);
+    function decimals() external view returns(uint8);
 
     /* ========== FOUNDER ONLY ========== */
     function setTreasury(address account_) external;

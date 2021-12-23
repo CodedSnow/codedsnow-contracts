@@ -59,7 +59,11 @@ contract COD is ERC20, ICOD {
     }
 
     /* ========== GLOBAL ========== */
-    function initialSupply() public view returns (uint256) {
+    function initialSupply() external view returns (uint256) {
         return _initialSupply;
+    }
+
+    function decimals() public view override(ERC20, ICOD) returns (uint8) {
+        return _decimals;
     }
 }

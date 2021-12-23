@@ -61,12 +61,6 @@ contract Treasury is ITreasury {
     }
 
     /* ========== VAULT ========== */
-    function allocate(address _to, uint256 _amount) external onlyVault {
-        require(_amount <= _availableBalance(), "Not enough treasury funds.");
-        _rewardAlloc -= _amount;
-        cod.transfer(_to, _amount);
-    }
-
     function updateAlloc(uint256 _amount) external onlyVault {
         _rewardAlloc -= _amount;
     }
@@ -76,30 +70,32 @@ contract Treasury is ITreasury {
     }
 
     /* ========== INTERACTIONS ========== */
-    // Returns the id of the new order
     function placeOrder(address _to, uint256 _daiAmount) external {
         require(_daiAmount >= 15 ether, "Atleast 15 DAI is required.");
-        require(_daiAmount >= _availableBalance(), "Not enough tokens in treasury.");
 
         // Market price of 1 COD in DAI.
-        uint256 mpDAI = 12/*price*/ * 10^9; // 100% of MP
-        uint256 dmpDAI = mpDAI / 100 * (100 - _orderDiscount); // 75% of MP
+        uint256 mpDAI = 12/*price*/ * (10^cod.decimals()); // 100% of MP (Example)
+        // Discounted market price for 1 COD in DAI.
+        uint256 dmpDAI = mpDAI / 100 * (100 - _orderDiscount); // 75% of MP (Example)
 
-        // Final cod amount
+        // Amount of COD that will be ordered
         uint256 codAmount = _daiAmount / dmpDAI;
 
         // Remove the DAI and mint to treasury
         dai.transferFrom(msg.sender, address(this), _daiAmount);
         cod.mint(address(this), codAmount);
 
+        // Include the freshly minted rewards in the allocation
         _rewardAlloc += (mpDAI - dmpDAI) * codAmount;
 
+        // Queue the order given the ID.
         orders[nextOrderId] = Order(
             _to,
             codAmount,
             block.timestamp + 5 days
         );
 
+        // Update total order amount
         totalOrderAmount += codAmount;
         emit PlacedOrder(nextOrderId, msg.sender);
 
@@ -118,10 +114,5 @@ contract Treasury is ITreasury {
         emit RedeemedOrder(_id);
         // Mint the order
         cod.mint(msg.sender, _amount);
-    }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
-    function _availableBalance() private view returns(uint256) {
-        return cod.balanceOf(address(this)) - totalOrderAmount;
     }
 }
