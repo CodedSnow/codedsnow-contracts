@@ -23,7 +23,7 @@ contract Treasury is ITreasury {
     uint256 public totalOrderAmount;
 
     uint8 private _orderDiscount; // Order discount in perc
-    uint256 private _rewardAlloc;
+    uint256 private _rewardAlloc; // 80% staking rewards, 20% validating rewards
 
     event PlacedOrder(uint256 indexed _id, address indexed _from);
     event RedeemedOrder(uint256 indexed _id);
@@ -74,7 +74,7 @@ contract Treasury is ITreasury {
         require(_daiAmount >= 15 ether, "Atleast 15 DAI is required.");
 
         // Market price of 1 COD in DAI.
-        uint256 mpDAI = 12/*price*/ * (10^cod.decimals()); // 100% of MP (Example)
+        uint256 mpDAI = 12/*price*/ * (10**9); // 100% of MP (Example)
         // Discounted market price for 1 COD in DAI.
         uint256 dmpDAI = mpDAI / 100 * (100 - _orderDiscount); // 75% of MP (Example)
 

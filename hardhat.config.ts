@@ -14,8 +14,9 @@ dotenv.config();
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
 
-    for (const account of accounts) {
-        console.log(account.address);
+    for (let i = 0; i < accounts.length; i++) {
+        console.log(`\nAccount ${i}: ${accounts[i].address}`);
+        console.log(`Balance: ${hre.ethers.utils.formatEther(await accounts[i].getBalance())} (ETH)`);
     }
 });
 
@@ -23,6 +24,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 // Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
+    defaultNetwork: "hardhat",
     solidity: {
         version: "0.8.11",
         settings: {
@@ -33,6 +35,11 @@ const config: HardhatUserConfig = {
         },
     },
     networks: {
+        hardhat: {
+            forking: {
+                url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
+            }
+        },
         ropsten: {
             url: process.env.ROPSTEN_URL || "",
             accounts:

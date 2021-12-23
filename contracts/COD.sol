@@ -17,7 +17,7 @@ contract COD is ERC20, ICOD {
     constructor()
     ERC20("CodedSnow", "COD", 9) {
         founder = msg.sender;
-        _initialSupply = 56000 * (10^decimals());
+        _initialSupply = 56000 * (10**9);
     }
 
     /* ========== MODIFIERS ========== */
@@ -44,9 +44,9 @@ contract COD is ERC20, ICOD {
         distributed = true;
 
         // 40.000 for presale + 10.000 for pool
-        _mint(_presale, 50000 * (10^decimals()));
+        _mint(_presale, 50000 * (10**9));
         // 6.000 for team/maintenance
-        _mint(_team, 6000);
+        _mint(_team, 6000 * (10**9));
     }
 
     /* ========== TREASURY ONLY ========== */
@@ -61,9 +61,5 @@ contract COD is ERC20, ICOD {
     /* ========== GLOBAL ========== */
     function initialSupply() external view returns (uint256) {
         return _initialSupply;
-    }
-
-    function decimals() public view override(ERC20, ICOD) returns (uint8) {
-        return _decimals;
     }
 }

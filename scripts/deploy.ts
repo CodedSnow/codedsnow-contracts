@@ -5,8 +5,6 @@
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 
-const DAI_TOKEN = "0x6b175474e89094c44da98b954eedeac495271d0f";
-
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
     // line interface.
@@ -29,7 +27,7 @@ async function main() {
 
     // Deploy Treasury
     const TreasuryContract = await ethers.getContractFactory("Treasury");
-    const treasury = await TreasuryContract.deploy(cod.address, DAI_TOKEN);
+    const treasury = await TreasuryContract.deploy(cod.address, process.env.DAI_TOKEN as string);
     await cod.setTreasury(treasury.address);
 
     console.log(`Deployed Treasury: ${treasury.address}`);
@@ -44,9 +42,19 @@ async function main() {
 
     // Deploy presale
     const PresaleContract = await ethers.getContractFactory("Presale");
-    const presale = await PresaleContract.deploy(cod.address, DAI_TOKEN, treasury.address);
+    const presale = await PresaleContract.deploy(cod.address, process.env.DAI_TOKEN as string, treasury.address);
 
     console.log(`Deployed Presale: ${presale.address}`);
+
+    const [owner] = await ethers.getSigners();
+    console.log(`\nOwner: ${owner.address}`);
+    console.log(`Balance: ${ethers.utils.formatEther(await owner.getBalance())} (ETH)`);
+
+    // Distributing initial supply
+    await cod.distSupply(presale.address, owner.address);
+    console.log('\n--------------[Initial Supply]--------------');
+    console.log(`Presale: ${ethers.utils.formatUnits(await cod.balanceOf(presale.address), 'gwei')} (COD)`);
+    console.log(`Team/Owner: ${ethers.utils.formatUnits(await cod.balanceOf(owner.address), 'gwei')} (COD)`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

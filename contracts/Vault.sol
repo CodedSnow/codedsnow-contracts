@@ -28,7 +28,7 @@ contract Vault {
         treasury = ITreasury(_treasury);
 
         // First manual (re)base
-        exchValue = 10^9; // 1 cod = 1 sCod 
+        exchValue = 10**9; // 1 cod = 1 sCod 
         lastRecalc = block.timestamp;
     }
 
@@ -37,7 +37,7 @@ contract Vault {
         // How many recalculations did we miss?
         uint256 missed = (block.timestamp - lastRecalc) / 8 hours;
         if (missed > 0) {
-            uint256 incr = missed * (treasury.rewardAlloc() / 6480);
+            uint256 incr = missed * ((treasury.rewardAlloc() / 100 * 80) / 6480);
             treasury.updateAlloc(incr);
 
             exchValue += incr;
@@ -53,7 +53,7 @@ contract Vault {
         // Send funds to treasury
         cod.transferFrom(msg.sender, address(treasury), _amount);
 
-        uint256 codAmount = (_amount * exchValue) / 10^9;
+        uint256 codAmount = (_amount * exchValue) / (10**9);
         sCod.mint(_to, codAmount);
 
         // TODO: 
