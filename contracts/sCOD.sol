@@ -3,35 +3,13 @@ pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
 import "./interfaces/IsCOD.sol";
+import "./types/AccessControlled.sol";
 
-contract sCOD is ERC20, IsCOD {
-    /* ========== STATE VARIABLES ========== */
-    address private founder;
-    address private vault;
-
+contract sCOD is ERC20, IsCOD, AccessControlled {
     /* ========== CONSTRUCTOR ========== */
-    constructor() ERC20("CodedSnow", "COD", 9) {
-        founder = msg.sender;
-    }
-
-    /* ========== MODIFIERS ========== */
-    modifier onlyFounder {
-        require(msg.sender == founder, "Founder only.");
-        _;
-    }
-
-    modifier onlyVault {
-        require(msg.sender != address(0), "Vault zero address.");
-        require(msg.sender == vault, "Founder only.");
-        _;
-    }
-
-    /* ========== FOUNDER ONLY ========== */
-    function setVault(address account_) external onlyFounder {
-        require(vault == address(0), "Vault can only be set once.");
-        
-        vault = account_;
-    }
+    constructor(address _authority)
+    ERC20("CodedSnow", "COD", 9)
+    AccessControlled(IAuthority(_authority)) {}
 
     /* ========== VAULT ONLY ========== */
     function mint(address account_, uint256 amount_) external onlyVault {
@@ -41,4 +19,6 @@ contract sCOD is ERC20, IsCOD {
     function burn(address account_, uint256 amount_) external onlyVault {
         _burn(account_, amount_);
     }
+
+    // TODO: Handle recalc here
 }

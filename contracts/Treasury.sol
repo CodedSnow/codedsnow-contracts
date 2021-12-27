@@ -4,11 +4,11 @@ pragma solidity ^0.8.11;
 import "./interfaces/ITreasury.sol";
 import "./interfaces/ICOD.sol";
 import "./interfaces/IDAI.sol";
+import "./types/AccessControlled.sol";
 
-contract Treasury is ITreasury {
+contract Treasury is ITreasury, AccessControlled {
     /* ========== STATE VARIABLES ========== */
     address private founder;
-    address private vault;
 
     ICOD private immutable cod;
     IDAI private immutable dai;
@@ -31,32 +31,17 @@ contract Treasury is ITreasury {
     event AllocatedReward(address indexed _to, uint256 _amount);
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _cod, address _dai) {
-        founder = msg.sender;
+    constructor(address _cod, address _dai, address _authority)
+    AccessControlled(IAuthority(_authority))
+    {
         cod = ICOD(_cod);
         dai = IDAI(_dai);
 
         _orderDiscount = 25;
     }
 
-    /* ========== MODIFIERS ========== */
-    modifier onlyFounder {
-        require(msg.sender == founder, "Founder only.");
-        _;
-    }
-
-    modifier onlyVault {
-        require(msg.sender == vault, "Vault only.");
-        _;
-    }
-
-    /* ========== ONLY FOUNDER ========== */
-    function setVault(address account_) external onlyFounder {
-        require(vault == address(0), "Vault can only be set once.");
-        vault = account_;
-    }
-
-    function grantAirdrop(address _to) external onlyFounder {
+    /* ========== ONLY GOVERNOR ========== */
+    function grantAirdrop(address _to) external onlyGovernor {
         // TODO: Calculate aidrop amount and send the airdrop
     }
 

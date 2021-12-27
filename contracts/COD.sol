@@ -3,42 +3,23 @@ pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
 import "./interfaces/ICOD.sol";
+import "./types/AccessControlled.sol";
 
-contract COD is ERC20, ICOD {
+contract COD is ERC20, ICOD, AccessControlled {
     /* ========== STATE VARIABLES ========== */
     uint256 internal _initialSupply;
-
-    address private founder;
-    address private treasury;
-
     bool private distributed;
 
     /* ========== CONSTRUCTOR ========== */
-    constructor()
-    ERC20("CodedSnow", "COD", 9) {
-        founder = msg.sender;
+    constructor(address _authority)
+    ERC20("CodedSnow", "COD", 9)
+    AccessControlled(IAuthority(_authority))
+    {
         _initialSupply = 56000 * (10**9);
     }
 
-    /* ========== MODIFIERS ========== */
-    modifier onlyFounder {
-        require(msg.sender == founder, "Founder only.");
-        _;
-    }
-
-    modifier onlyTreasury {
-        require(msg.sender != address(0), "Treasury zero address.");
-        require(msg.sender == treasury, "Founder only.");
-        _;
-    }
-
-    /* ========== FOUNDER ONLY ========== */
-    function setTreasury(address account_) external onlyFounder {
-        require(treasury == address(0), "Treasury can only be set once.");
-        treasury = account_;
-    }
-
-    function distSupply(address _presale, address _team) external onlyFounder {
+    /* ========== GOVERNOR ONLY ========== */
+    function distSupply(address _presale, address _team) external onlyGovernor {
         require(distributed == false, "Already distributed supply.");
 
         distributed = true;

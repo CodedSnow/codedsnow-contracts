@@ -2,8 +2,7 @@
 pragma solidity ^0.8.11;
 
 interface ITreasury {
-    /* ========== ONLY FOUNDER ========== */
-    function setVault(address account_) external;
+    /* ========== ONLY GOVERNOR ========== */
     function grantAirdrop(address _to) external;
 
     /* ========== VAULT ========== */

@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 import "./interfaces/ICOD.sol";
 import "./interfaces/IsCOD.sol";
 import "./interfaces/ITreasury.sol";
+import "./interfaces/IAuthority.sol";
 
 contract Vault {
     /* ========== STATE VARIABLES ========== */
@@ -22,10 +23,10 @@ contract Vault {
     Unlock[] public unlocks;
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _cod, address _sCod, address _treasury) {
+    constructor(address _cod, address _sCod, address _authority) {
         cod = ICOD(_cod);
         sCod = IsCOD(_sCod);
-        treasury = ITreasury(_treasury);
+        treasury = ITreasury(IAuthority(_authority).treasury());
 
         // First manual (re)base
         exchValue = 10**9; // 1 cod = 1 sCod 

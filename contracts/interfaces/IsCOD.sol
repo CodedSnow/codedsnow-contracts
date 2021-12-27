@@ -3,10 +3,7 @@ pragma solidity ^0.8.11;
 
 import "./IERC20.sol";
 
-interface IsCOD is IERC20 {
-    /* ========== FOUNDER ONLY ========== */
-    function setVault(address account_) external;
-    
+interface IsCOD is IERC20 {    
     /* ========== VAULT ONLY ========== */
     function mint(address account_, uint256 amount_) external;
     function burn(address account_, uint256 amount_) external;
