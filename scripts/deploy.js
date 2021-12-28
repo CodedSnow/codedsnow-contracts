@@ -30,7 +30,7 @@ async function main() {
     // ========== BUILD LEVEL ==========
     // Deploy Treasury
     const TreasuryContract = await ethers.getContractFactory("Treasury");
-    const treasury = await TreasuryContract.deploy(cod.address, process.env.DAI_TOKEN, auth.address);
+    const treasury = await TreasuryContract.deploy(cod.address, process.env.CONTRACTS_DAI_TOKEN, auth.address);
     await auth.pushTreasury(deployer.address, true);
 
     console.log(`Deployed Treasury: ${treasury.address}`);
@@ -45,7 +45,7 @@ async function main() {
     // ========== ROOFTOP LEVEL ==========
     // Deploy presale
     const PresaleContract = await ethers.getContractFactory("Presale");
-    const presale = await PresaleContract.deploy(cod.address, process.env.DAI_TOKEN, auth.address);
+    const presale = await PresaleContract.deploy(cod.address, process.env.CONTRACTS_DAI_TOKEN, auth.address);
 
     console.log(`Deployed Presale: ${presale.address}`);
 
