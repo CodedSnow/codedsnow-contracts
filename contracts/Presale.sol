@@ -13,7 +13,11 @@ contract Presale {
     address private immutable treasury;
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _cod, address _dai, address _treasury) {
+    constructor(
+        address _cod,
+        address _dai,
+        address _treasury
+    ) {
         cod = ICOD(_cod);
         dai = IDAI(_dai);
 
@@ -22,7 +26,7 @@ contract Presale {
     }
 
     /* ========== MODIFIERS ========== */
-    modifier onlyHost {
+    modifier onlyHost() {
         require(msg.sender == host, "Host only.");
         _;
     }

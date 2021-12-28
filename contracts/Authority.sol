@@ -17,43 +17,44 @@ contract Authority is IAuthority, AccessControlled {
     address public newVault;
 
     /* ========== Constructor ========== */
-    constructor(
-        address _governor,
-        address _guardian,
-        address _treasury,
-        address _vault
-    ) AccessControlled(IAuthority(address(this)) ) {
+    constructor(address _governor) AccessControlled(IAuthority(address(this))) {
         governor = _governor;
         emit GovernorPushed(address(0), governor, true);
-        guardian = _guardian;
-        emit GuardianPushed(address(0), guardian, true);
-        treasury = _treasury;
-        emit TreasuryPushed(address(0), treasury, true);
-        vault = _vault;
-        emit VaultPushed(address(0), vault, true);
     }
 
     /* ========== GOV ONLY ========== */
-    function pushGovernor(address _newGovernor, bool _effectiveImmediately) external onlyGovernor {
-        if( _effectiveImmediately ) governor = _newGovernor;
+    function pushGovernor(address _newGovernor, bool _effectiveImmediately)
+        external
+        onlyGovernor
+    {
+        if (_effectiveImmediately) governor = _newGovernor;
         newGovernor = _newGovernor;
         emit GovernorPushed(governor, newGovernor, _effectiveImmediately);
     }
 
-    function pushGuardian(address _newGuardian, bool _effectiveImmediately) external onlyGovernor {
-        if( _effectiveImmediately ) guardian = _newGuardian;
+    function pushGuardian(address _newGuardian, bool _effectiveImmediately)
+        external
+        onlyGovernor
+    {
+        if (_effectiveImmediately) guardian = _newGuardian;
         newGuardian = _newGuardian;
         emit GuardianPushed(guardian, newGuardian, _effectiveImmediately);
     }
 
-    function pushTreasury(address _newTreasury, bool _effectiveImmediately) external onlyGovernor {
-        if( _effectiveImmediately ) treasury = _newTreasury;
+    function pushTreasury(address _newTreasury, bool _effectiveImmediately)
+        external
+        onlyGovernor
+    {
+        if (_effectiveImmediately) treasury = _newTreasury;
         newTreasury = _newTreasury;
         emit TreasuryPushed(treasury, newTreasury, _effectiveImmediately);
     }
 
-    function pushVault(address _newVault, bool _effectiveImmediately) external onlyGovernor {
-        if( _effectiveImmediately ) vault = _newVault;
+    function pushVault(address _newVault, bool _effectiveImmediately)
+        external
+        onlyGovernor
+    {
+        if (_effectiveImmediately) vault = _newVault;
         newVault = _newVault;
         emit VaultPushed(vault, newVault, _effectiveImmediately);
     }

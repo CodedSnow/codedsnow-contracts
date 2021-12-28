@@ -6,15 +6,12 @@
 import { ethers } from "hardhat";
 
 async function main() {
+    const [deployer] = await ethers.getSigners();
+
     // ========== BASE LEVEL ==========
     // Deploy Authority
     const AuthContract = await ethers.getContractFactory("Authority");
-    const auth = await AuthContract.deploy(
-        deployer.address,
-        deployer.address,
-        deployer.address,
-        deployer.address
-    );
+    const auth = await AuthContract.deploy(deployer.address);    
 
     console.log(`Deployed Authority: ${auth.address}`);
 
@@ -34,12 +31,14 @@ async function main() {
     // Deploy Treasury
     const TreasuryContract = await ethers.getContractFactory("Treasury");
     const treasury = await TreasuryContract.deploy(cod.address, process.env.DAI_TOKEN, auth.address);
+    await auth.pushTreasury(deployer.address, true);
 
     console.log(`Deployed Treasury: ${treasury.address}`);
 
     // Deploy Vault
     const VaultContract = await ethers.getContractFactory("Vault");
-    const vault = await VaultContract.deploy(cod.address, scod.address, auth.address);
+    const vault = await VaultContract.deploy(cod.address, scod.address, treasury.address);
+    await auth.pushVault(deployer.address, true);
 
     console.log(`Deployed Vault: ${vault.address}`);
 
@@ -49,8 +48,6 @@ async function main() {
     const presale = await PresaleContract.deploy(cod.address, process.env.DAI_TOKEN, auth.address);
 
     console.log(`Deployed Presale: ${presale.address}`);
-
-    const [deployer] = await ethers.getSigners();
 
     console.log(`\nDeployer: ${deployer.address}`);
     console.log(`Balance: ${ethers.utils.formatEther(await deployer.getBalance())} (ETH)`);

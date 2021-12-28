@@ -12,8 +12,8 @@ contract COD is ERC20, ICOD, AccessControlled {
 
     /* ========== CONSTRUCTOR ========== */
     constructor(address _authority)
-    ERC20("CodedSnow", "COD", 9)
-    AccessControlled(IAuthority(_authority))
+        ERC20("CodedSnow", "COD", 9)
+        AccessControlled(IAuthority(_authority))
     {
         _initialSupply = 56000 * (10**9);
     }

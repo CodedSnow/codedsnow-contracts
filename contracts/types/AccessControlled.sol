@@ -10,7 +10,7 @@ abstract contract AccessControlled {
     /* ========== VARIABLES ========== */
     IAuthority public authority;
 
-    string constant private UNAUTHORIZED = "UNAUTHORIZED"; // save gas
+    string private constant UNAUTHORIZED = "UNAUTHORIZED"; // save gas
 
     /* ========== Constructor ========== */
     constructor(IAuthority _authority) {
@@ -23,12 +23,12 @@ abstract contract AccessControlled {
         require(msg.sender == authority.governor(), UNAUTHORIZED);
         _;
     }
-    
+
     modifier onlyGuardian() {
         require(msg.sender == authority.guardian(), UNAUTHORIZED);
         _;
     }
-    
+
     modifier onlyTreasury() {
         require(msg.sender == authority.treasury(), UNAUTHORIZED);
         _;
@@ -38,7 +38,7 @@ abstract contract AccessControlled {
         require(msg.sender == authority.vault(), UNAUTHORIZED);
         _;
     }
-    
+
     /* ========== GOV ONLY ========== */
     function setAuthority(IAuthority _newAuthority) external onlyGovernor {
         authority = _newAuthority;

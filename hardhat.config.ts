@@ -38,13 +38,30 @@ const config: HardhatUserConfig = {
         hardhat: {
             forking: {
                 url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
-            }
+            },
         },
+        // Ethereum
         ropsten: {
-            url: process.env.ROPSTEN_URL || "",
-            accounts:
-                process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            url: `https://ropsten.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
         },
+        kovan: {
+            url: `https://kovan.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+        },
+        rinkeby: {
+            url: `https://rinkeby.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+        },
+        goerli: {
+            url: `https://goerli.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+        },
+        // Polygon
+        mumbai: {
+            url: "https://rpc-mumbai.maticvigil.com",
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+        }
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,

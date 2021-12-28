@@ -11,5 +11,6 @@ interface ICOD is IERC20 {
 
     /* ========== TREASURY ONLY ========== */
     function mint(address account_, uint256 amount_) external;
+
     function burn(address account_, uint256 amount_) external;
 }
