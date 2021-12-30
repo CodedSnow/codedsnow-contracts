@@ -3,217 +3,198 @@ pragma solidity ^0.8.11;
 
 import "./interfaces/ITreasury.sol";
 import "./interfaces/ICOD.sol";
-import "./interfaces/IDAI.sol";
-import "./interfaces/IERC20.sol";
-import "./types/AccessControlled.sol";
-import "./interfaces/IUniswapV2ERC20.sol";
-import "./interfaces/IUniswapV2Pair.sol";
-import "./interfaces/IERC20Metadata.sol";
+import "./interfaces/IbCOD.sol";
+import "./types/AuthGuard.sol";
 
-contract Treasury is ITreasury, AccessControlled {
+import "./interfaces/IUniswapV3Pool.sol";
+import "./libraries/OracleLibrary.sol";
+import "./libraries/SafeCast.sol";
+
+contract Treasury is ITreasury, AuthGuard {
     /* ========== STATE VARIABLES ========== */
-    ICOD private immutable cod;
-    IDAI private immutable dai;
+    ICOD public immutable cod;
+    IbCOD public immutable bCod;
+    address public immutable native; // Address of native token for Uniswap
 
-    /* ========== BONDING VARIABLES ========== */
-    struct Bond {
-        IERC20 principal; // token to accept as payment
-        address swapAddr;
-        uint256 maxDebt; // maxDebt remaining
-        uint256 currentDebt; // total debt from bond
-        uint256 vestingTerm; // In blocks
-        uint256 minPayout;
-        uint256 maxPayout;
-        uint256 lastDecay; // last block when debt was decayed
-    }
-    mapping(uint256 => Bond) public bonds;
-    uint256[] public bondIds; // bond IDs
+    address private _nativePool;
+    uint256 private _epochTime; // Time between epochs (e.g. 8 hours) (in seconds)
+    uint256 private _lastEpoch; // Unix epoch
+    uint256 private _totalEpochs; // Total amount of epochs
+    uint256 private _twapPeriod;
 
-    /* ========== ORDER VARIABLES ========== */
-    struct Order {
-        address receiver;
-        uint256 amount; // Cod amount to receive
-        uint256 expiry; // block number
-    }
-    mapping(uint256 => Order) public orders;
-    uint256 private _nextOrderId;
+    uint256 public lastPrice;
+    uint256 public targetPrice;
+    uint256 public rewardCeiling;
+    uint256 public rewardRatio;
+    uint256 public maxDebtRatio;
 
-    /* ========== MISC VARIABLES ========== */
-    uint256 private _rewardAlloc; // 80% staking rewards, 20% validating rewards
-
-    event PlacedOrder(uint256 indexed _id, address indexed _from);
-    event RedeemedOrder(uint256 indexed _id);
-    event GrantedAirdrop(address indexed _to, uint256 _amount);
-    event AllocatedReward(address indexed _to, uint256 _amount);
-
-    /* ========== CONSTRUCTOR ========== */
+    /* ========== CONSTRUCTOR + SETUP ========== */
     constructor(
         address _cod,
-        address _dai,
+        address _bCod,
+        address _native,
+        uint256 _currentTime,
         address _authority
-    ) AccessControlled(IAuthority(_authority)) {
+    ) AuthGuard(IAuthority(_authority)) {
         cod = ICOD(_cod);
-        dai = IDAI(_dai);
+        bCod = IbCOD(_bCod);
+        native = _native;
+
+        _epochTime = 18000; // Every 5 hours
+        _lastEpoch = _currentTime;
+        _twapPeriod = 1800; // Every 30 minutes
+
+        targetPrice = 10**18; // Target price in MATIC
+        rewardCeiling = (10**18 * 11) / 10; // In matic (1.1 MATIC)
+        rewardRatio = 1000; // 10% in rewards, in COD
+        maxDebtRatio = 3500; // Upto 35% supply of bCOD to purchase
     }
 
-    /* ========== PRIV ONLY ========== */
-    function grantAirdrop(address _to) external onlyGovernor {
-        // TODO: Calculate aidrop amount and send the airdrop
+    function setNativePool(address _pool) external onlyGovernor {
+        _nativePool = _pool;
     }
 
-    function addBond(
-        address _princinple,
-        address _swapAddr,
-        uint256 _maxDebt,
-        uint256 _currentDebt,
-        uint256 _vestingTerm,
-        uint256 _minPayout,
-        uint256 _maxPayout
-    ) external onlyGuardian returns (uint256 _id) {
-        uint256 _bondId = bondIds.length;
+    /* ========== MODIFIERS ========== */
+    modifier checkEpoch() {
+        // How many epochs did we miss?
+        uint256 missed = (block.timestamp - _lastEpoch) / _epochTime;
+        if (missed > 0) {
+            _lastEpoch = block.timestamp;
+            _totalEpochs + missed;
 
-        bonds[_bondId] = Bond(
-            IERC20(_princinple),
-            _swapAddr,
-            _maxDebt,
-            _currentDebt,
-            _vestingTerm,
-            _minPayout,
-            _maxPayout,
-            block.number
-        );
-
-        bondIds.push(_bondId);
-
-        return _bondId;
+            lastPrice = assetToNative(address(cod), 10**9);
+        }
+        _;
     }
 
-    function deprecateBond(uint256 _id) external onlyGuardian {
-        bonds[_id].maxDebt = 0;
+    /* ========== GUARDIAN ONLY ========== */
+    function setEpochInterval(uint256 _interval) external onlyGuardian {
+        _epochTime = _interval;
     }
 
-    /* ========== VAULT ========== */
-    function updateAlloc(uint256 _amount) external onlyVault {
-        _rewardAlloc -= _amount;
+    function setTargetPrice(uint256 _price) external onlyGuardian {
+        targetPrice = _price;
     }
 
-    // 7 day reward allocation (80% staking, 20% validating)
-    function rewardAlloc() external view returns (uint256) {
-        return _rewardAlloc;
+    function setRewardCeiling(uint256 _ceiling) external onlyGuardian {
+        rewardCeiling = _ceiling;
     }
 
-    /* ========== INTERACTIONS ========== */
-    function bond(
-        uint256 _bondId,
-        address _to,
-        uint256 _amount
-    ) external returns (uint256) {
-        require(_amount >= bonds[_bondId].minPayout && _amount <= bonds[_bondId].maxPayout, "Invalid amount");
-
-        decayDebt(_bondId);
-        require(_amount <= (bonds[_bondId].maxDebt - bonds[_bondId].currentDebt), "Exceeded max debt");
-
-        bonds[_bondId].principal.transferFrom(msg.sender, address(this), _amount);
-        bonds[_bondId].currentDebt += _amount;
-
-        // Deterministism for rewards
-        uint256 marketPrice = tokenPrice(bonds[_bondId].swapAddr, bonds[_bondId].principal);
-        uint256 dMarketPrice = (marketPrice * (bonds[_bondId].currentDebt / (bonds[_bondId].maxDebt + bonds[_bondId].currentDebt))) / 100;
-
-        uint256 codAmount = _amount / dMarketPrice;
-        uint256 codMintAmount = (codAmount * 30) / 100; // 30% for reward allocation
-
-        cod.mint(address(this), codMintAmount);
-        _rewardAlloc += codMintAmount;
-
-        uint256 orderId = _nextOrderId;
-        _nextOrderId++;
-
-        uint256 expiry = block.number + bonds[_bondId].vestingTerm;
-
-        orders[orderId] = Order(_to, codAmount, expiry);
-        emit OrderCreated(orderId, _to, _bondId, codAmount, expiry);
-
-        return orderId;
+    function setRewardRatio(uint256 _ratio) external onlyGuardian {
+        rewardRatio = _ratio;
     }
 
-    function claim(uint256 _id) external {
-        // Checks
-        Order memory selOrder = orders[_id];
-        require(msg.sender == selOrder.receiver, "Not your order");
-        require(selOrder.expiry <= block.number, "Vesting period active");
-        // Effect
-        delete orders[_id];
-        emit OrderClaimed(_id, selOrder.receiver, selOrder.amount);
-        // Interaction
-        cod.mint(msg.sender, selOrder.amount);
+    function setMaxDebtRatio(uint256 _ratio) external onlyGuardian {
+        maxDebtRatio = _ratio;
     }
 
-    function tokenPrice(address _swapAddr, IERC20 _principal)
-        public
-        view
-        returns (uint256 price_)
-    {
-        IUniswapV2Pair _swapPair = IUniswapV2Pair(_swapAddr);
-        if (_swapAddr == address(0)) {
-            // TODO:
-            // Get the price of principal in USD
-            // Get the price of cod in USD
-            // Get the price of principal in cod
-            price_ = 10**IERC20Metadata(address(cod)).decimals() / 10**IERC20Metadata(address(_principal)).decimals();
+    function setTwapPeriod(uint256 _period) external onlyGuardian {
+        _twapPeriod = _period;
+    }
+
+    /* ========== PUBLIC FUNCTIONS ========== */
+    function canBuyBond() public view returns (bool) {
+        return lastPrice < targetPrice;
+    }
+
+    function canSellBond() public view returns (bool) {
+        // Check if price of bond is higher than > 1.0
+        return lastPrice > targetPrice; // 1 * 10**18
+    }
+
+    // Obtain the bonus amount in cod
+    function calcBonus() public view returns (uint256 bonusCod_) {
+        // 1.1 * 10**18
+        if (lastPrice >= rewardCeiling) {
+            bonusCod_ = lastPrice * 10 / 100;
         } else {
-            // Example: How much USD/DAI is one COD?
-            (uint256 reserve0, uint256 reserve1, ) = _swapPair.getReserves();
-
-            uint256 reserve;
-            if (_swapPair.token0() == address(cod)) {
-                reserve = reserve1;
-            } else {
-                require(_swapPair.token1() == address(cod), "Invalid pair");
-                reserve = reserve0;
-            }
-
-            // Hopefull 12 in the beginning
-            price_ = (reserve * 2 * (10**IERC20Metadata(address(cod)).decimals())) / getTotalValue(_swapPair);
+            bonusCod_ = 0;
         }
     }
 
-    /* ======== INTERNAL FUNCTIONS ======== */
-    function sqrrt(uint256 a) internal pure returns (uint256 c) {
-        if (a > 3) {
-            c = a;
-            uint256 b = (a / 2) + 1;
-            while (b < c) {
-                c = b;
-                b = ((a / b) + b) / 2;
-            }
-        } else if (a != 0) {
-            c = 1;
-        }
+    function assetToNative(address _tokenIn, uint256 _amountIn) public view returns (uint256 nativeAmount) {
+        nativeAmount = _fetchAmountFromSinglePool(_tokenIn, _amountIn, native, _nativePool);
     }
 
-    function getTotalValue(IUniswapV2Pair _swapPair) public view returns (uint256 value_) {
-        uint256 token0 = IERC20Metadata(_swapPair.token0()).decimals();
-        uint256 token1 = IERC20Metadata(_swapPair.token1()).decimals();
 
-        uint256 decimals = (token0 + token1) / IERC20Metadata(address(_swapPair)).decimals();
-        (uint256 reserve0, uint256 reserve1, ) = _swapPair.getReserves();
+    /* ========== EXTERNAL FUNCTIONS ========== */
+    // Deflate
+    function buyBond(uint256 _amount) external {
+        require(canBuyBond(), "Cannot buy bond");
 
-        value_ = sqrrt((reserve0 * reserve1) / 10**decimals) * 2;
+        // Circulating COD supply
+        uint256 cCodSupply = cod.totalSupply() - cod.balanceOf(address(this));
+        // New supply of bCod
+        uint256 newSupply = bCod.totalSupply() + _amount;
+
+        uint256 maxDebt = (cCodSupply * maxDebtRatio) / 10000;
+        require(newSupply <= maxDebt, "Exceeded max debt ratio");
+
+        // Checks
+        require(cod.balanceOf(msg.sender) >= _amount, "Not enough funds");
+        // Effects
+        cod.burn(msg.sender, _amount);
+        bCod.mint(msg.sender, _amount);
+        // Interactions
+        // TODO: Call event
     }
 
-    function decayDebt(uint256 _bondId) internal {
-        Bond memory tmpBond = bonds[_bondId];
+    // Inflate
+    function sellBond(uint256 _amount) external {
+        require(canBuyBond(), "Cannot sell bond");
 
-        // Multiply the current debt by the blocks we missed devided by the vesting term
-        uint256 decay = (tmpBond.currentDebt * (block.number - tmpBond.lastDecay)) / tmpBond.vestingTerm;
+        // Checks
+        require(bCod.balanceOf(msg.sender) >= _amount, "Not enough funds");
+        // Effects
+        bCod.burn(msg.sender, _amount);
+        cod.mint(msg.sender, _amount + calcBonus());
+        // Interactions
+        // TODO: Call event
+    }
 
-        if (decay > tmpBond.currentDebt) {
-            decay = tmpBond.currentDebt;
+    function lastEpoch() external view returns (uint256) {
+        return _lastEpoch;
+    }
+
+    function nextEpoch() external view returns (uint256) {
+        return _lastEpoch + _epochTime;
+    }
+
+    function totalEpochs() external view returns (uint256) {
+        return _totalEpochs;
+    }
+
+    function getEpochPrice() external view returns (uint256 codPrice_) {
+        codPrice_ = lastPrice;
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+    function _fetchAmountFromSinglePool(
+        address _tokenIn,
+        uint256 _amountIn,
+        address _tokenOut,
+        address _pool
+    ) internal view returns (uint256 amountOut) {
+        // Leave ticks as int256s to avoid solidity casting
+        (int24 spotTick,) = OracleLibrary.getBlockStartingTickAndLiquidity(_pool);
+        (int24 twapTick,) = OracleLibrary.consult(_pool, SafeCast.toUint32(_twapPeriod));
+
+        // Return min amount between spot price and twap
+        // Ticks are based on the ratio between token0:token1 so if the input token is token1 then
+        // we need to treat the tick as an inverse
+        int256 minTick;
+        if (_tokenIn < _tokenOut) {
+            minTick = spotTick < twapTick ? spotTick : twapTick;
+        } else {
+            minTick = spotTick > twapTick ? spotTick : twapTick;
         }
 
-        // Set the new values
-        bonds[_bondId].currentDebt = bonds[_bondId].currentDebt - decay;
-        bonds[_bondId].lastDecay = block.number;
+        return
+            OracleLibrary.getQuoteAtTick(
+                int24(minTick), // can assume safe being result from consult()
+                SafeCast.toUint128(_amountIn),
+                _tokenIn,
+                _tokenOut
+            );
     }
 }

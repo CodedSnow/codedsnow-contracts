@@ -1,48 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.11;
 
-import "./IUniswapV2Pair.sol";
-import "./IERC20.sol";
-
 interface ITreasury {
-    event OrderCreated(
-        uint256 indexed id,
-        address receiver,
-        uint256 bondId,
-        uint256 codAmount,
-        uint256 expiry
-    );
-    event OrderClaimed(uint256 indexed id, address receiver, uint256 amount);
+    function canBuyBond() external view returns (bool);
 
-    /* ========== ONLY GUARDIAN ========== */
-    function addBond(
-        address _princinple,
-        address _swapAddr,
-        uint256 _maxDebt,
-        uint256 _currentDebt,
-        uint256 _vestingTerm,
-        uint256 _minPayout,
-        uint256 _maxPayout
-    ) external returns (uint256 _id);
+    function canSellBond() external view returns (bool);
 
-    function deprecateBond(uint256 _id) external;
+    function calcBonus() external view returns (uint256 bonusCod_);
 
-    /* ========== VAULT ========== */
-    function updateAlloc(uint256 _amount) external;
+    function assetToNative(address _tokenIn, uint256 _amountIn) external view returns (uint256 nativeAmount);
 
-    function rewardAlloc() external view returns (uint256);
+    function buyBond(uint256 _amount) external;
 
-    /* ========== INTERACTIONS ========== */
-    function bond(
-        uint256 _bondId,
-        address _to,
-        uint256 _amount
-    ) external returns (uint256);
+    function sellBond(uint256 _amount) external;
 
-    function claim(uint256 _orderId) external;
+    function lastEpoch() external view returns (uint256);
 
-    function tokenPrice(address _swapAddr, IERC20 _principal)
-        external
-        view
-        returns (uint256 price_);
+    function nextEpoch() external view returns (uint256);
+
+    function totalEpochs() external view returns (uint256);
+
+    function getEpochPrice() external view returns (uint256 codPrice_);
 }

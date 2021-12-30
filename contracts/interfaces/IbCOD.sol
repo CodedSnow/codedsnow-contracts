@@ -3,12 +3,8 @@ pragma solidity ^0.8.11;
 
 import "./IERC20.sol";
 
-interface IsCOD is IERC20 {
-    /* ========== VAULT ONLY ========== */
+interface IbCOD is IERC20 {
     function mint(address account_, uint256 amount_) external;
 
     function burn(address account_, uint256 amount_) external;
-
-    /* ========== MISC ========== */
-    function exchValue() external view returns (uint256);
 }

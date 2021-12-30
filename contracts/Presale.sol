@@ -2,24 +2,17 @@
 pragma solidity ^0.8.11;
 
 import "./interfaces/ICOD.sol";
-import "./interfaces/IDAI.sol";
 import "./interfaces/ITreasury.sol";
 
 contract Presale {
     /* ========== STATE VARIABLES ========== */
     ICOD private immutable cod;
-    IDAI private immutable dai;
     address private immutable host;
     address private immutable treasury;
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(
-        address _cod,
-        address _dai,
-        address _treasury
-    ) {
+    constructor(address _cod, address _treasury) {
         cod = ICOD(_cod);
-        dai = IDAI(_dai);
 
         host = msg.sender;
         treasury = _treasury;
@@ -32,4 +25,8 @@ contract Presale {
     }
 
     // TODO: Implement the presale functions
+    function deposit() public payable {
+        uint256 codAmount = msg.value / (2 * 10**9); // 50%
+        cod.transfer(msg.sender, codAmount);
+    }
 }

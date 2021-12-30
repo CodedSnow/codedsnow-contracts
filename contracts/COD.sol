@@ -3,9 +3,9 @@ pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
 import "./interfaces/ICOD.sol";
-import "./types/AccessControlled.sol";
+import "./types/AuthGuard.sol";
 
-contract COD is ERC20, ICOD, AccessControlled {
+contract COD is ERC20, ICOD, AuthGuard {
     /* ========== STATE VARIABLES ========== */
     uint256 internal _initialSupply;
     bool private distributed;
@@ -13,14 +13,14 @@ contract COD is ERC20, ICOD, AccessControlled {
     /* ========== CONSTRUCTOR ========== */
     constructor(address _authority)
         ERC20("CodedSnow", "COD", 9)
-        AccessControlled(IAuthority(_authority))
+        AuthGuard(IAuthority(_authority))
     {
         _initialSupply = 56000 * (10**9);
     }
 
     /* ========== GOVERNOR ONLY ========== */
     function distSupply(address _presale, address _team) external onlyGovernor {
-        require(distributed == false, "Already distributed supply.");
+        require(distributed == false, "Already distributed supply");
 
         distributed = true;
 

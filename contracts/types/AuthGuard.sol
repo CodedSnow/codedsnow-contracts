@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import "../interfaces/IAuthority.sol";
 
-abstract contract AccessControlled {
+abstract contract AuthGuard {
     /* ========== EVENTS ========== */
     event AuthorityUpdated(IAuthority indexed authority);
 
@@ -31,11 +31,6 @@ abstract contract AccessControlled {
 
     modifier onlyTreasury() {
         require(msg.sender == authority.treasury(), UNAUTHORIZED);
-        _;
-    }
-
-    modifier onlyVault() {
-        require(msg.sender == authority.vault(), UNAUTHORIZED);
         _;
     }
 

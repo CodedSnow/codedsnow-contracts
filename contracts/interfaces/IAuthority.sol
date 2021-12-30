@@ -18,16 +18,10 @@ interface IAuthority {
         address indexed to,
         bool _effectiveImmediately
     );
-    event VaultPushed(
-        address indexed from,
-        address indexed to,
-        bool _effectiveImmediately
-    );
 
     event GovernorPulled(address indexed from, address indexed to);
     event GuardianPulled(address indexed from, address indexed to);
     event TreasuryPulled(address indexed from, address indexed to);
-    event VaultPulled(address indexed from, address indexed to);
 
     /* ========== VIEW ========== */
     function governor() external view returns (address);
@@ -35,6 +29,4 @@ interface IAuthority {
     function guardian() external view returns (address);
 
     function treasury() external view returns (address);
-
-    function vault() external view returns (address);
 }
