@@ -106,7 +106,7 @@ contract Treasury is ITreasury, AuthGuard {
     function calcBonus() public view returns (uint256 bonusCod_) {
         // 1.1 * 10**18
         if (lastPrice >= rewardCeiling) {
-            bonusCod_ = lastPrice * 10 / 100;
+            bonusCod_ = lastPrice * rewardRatio / 10000;
         } else {
             bonusCod_ = 0;
         }
@@ -119,7 +119,7 @@ contract Treasury is ITreasury, AuthGuard {
 
     /* ========== EXTERNAL FUNCTIONS ========== */
     // Deflate
-    function buyBond(uint256 _amount) external {
+    function buyBond(uint256 _amount) external checkEpoch {
         require(canBuyBond(), "Cannot buy bond");
 
         // Circulating COD supply
@@ -140,7 +140,7 @@ contract Treasury is ITreasury, AuthGuard {
     }
 
     // Inflate
-    function sellBond(uint256 _amount) external {
+    function sellBond(uint256 _amount) external checkEpoch {
         require(canBuyBond(), "Cannot sell bond");
 
         // Checks

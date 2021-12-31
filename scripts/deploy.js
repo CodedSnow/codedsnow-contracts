@@ -17,25 +17,24 @@ async function main() {
     console.log(`Deployed COD: ${cod.address}`);
 
     // Deploy sCOD
-    const sCodContract = await ethers.getContractFactory("sCOD");
-    const scod = await sCodContract.deploy(auth.address);
+    const bCodContract = await ethers.getContractFactory("bCOD");
+    const bcod = await bCodContract.deploy(auth.address);
 
-    console.log(`Deployed sCOD: ${scod.address}`);
+    console.log(`Deployed bCOD: ${bcod.address}`);
 
     // ========== BUILD LEVEL ==========
-    // Deploy Treasury
+    // TODO: Deploy Treasury
     const TreasuryContract = await ethers.getContractFactory("Treasury");
-    const treasury = await TreasuryContract.deploy(cod.address, process.env.CONTRACTS_DAI_TOKEN, auth.address);
+    const treasury = await TreasuryContract.deploy(
+        cod.address,
+        bcod.address,
+        process.env.MATIC_TOKEN,
+        Math.floor(new Date().getTime() / 1000),
+        auth.address
+    );
     await auth.pushTreasury(deployer.address, true);
 
     console.log(`Deployed Treasury: ${treasury.address}`);
-
-    // Deploy Vault
-    const VaultContract = await ethers.getContractFactory("Vault");
-    const vault = await VaultContract.deploy(cod.address, scod.address, treasury.address);
-    await auth.pushVault(deployer.address, true);
-
-    console.log(`Deployed Vault: ${vault.address}`);
 
     // ========== ROOFTOP LEVEL ==========
     // Deploy presale
