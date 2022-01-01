@@ -6,7 +6,9 @@ interface IEpoch {
 
     function updateEpoch() external;
 
-    function missedEpochs() external view returns (uint256);
+    function missedEpochs(uint256 _from) external view returns (uint256);
+
+    function currentEpoch() external view returns (uint256);
 
     function nextEpoch() external view returns (uint256);
 }

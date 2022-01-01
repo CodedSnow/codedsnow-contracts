@@ -33,6 +33,7 @@ contract Presale {
         }
     }
 
+    // Buy Cod with MATIC
     function buyCod() public payable handleEnd {
         uint256 codAmount = msg.value * 60 / 100; // 60%
         require(codAmount <= ICod(cod).balanceOf(address(this)), "Presale-Cod depleted");
@@ -40,6 +41,7 @@ contract Presale {
         ICod(cod).transfer(msg.sender, codAmount);
     }
 
+    // Buy CShare with MATIC
     function buyCShare() public payable handleEnd {
         uint256 cshareAmount = msg.value * 75 / 100; // 75%
         require(cshareAmount <= ICShare(cshare).balanceOf(address(this)), "Presale-CShare depleted");

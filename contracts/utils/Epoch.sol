@@ -27,11 +27,15 @@ contract Epoch is IEpoch, AuthGuard {
     }
 
     /* ========== PUBLIC ========== */
-    function missedEpochs() public view returns (uint256) {
-        return (block.timestamp - _lastEpoch) / _epochTime; // Lovely trunication
+    function missedEpochs(uint256 _from) public view returns (uint256) {
+        return (_from - _lastEpoch) / _epochTime; // Lovely trunication
     }
 
     /* ========== EXTERNAL ========== */
+    function currentEpoch() external view returns (uint256) {
+        return _lastEpoch;
+    }
+
     function nextEpoch() external view returns (uint256) {
         return _lastEpoch + _epochTime;
     }

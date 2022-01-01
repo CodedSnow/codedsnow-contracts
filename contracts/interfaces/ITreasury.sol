@@ -5,6 +5,8 @@ interface ITreasury {
     event BoughtBond(address indexed to, uint256 _amount);
     event SoldBond(address indexed to, uint256 _amount);
 
+    function updateEpoch() external;
+
     function lastPrice() external view returns (uint256);
 
     function targetPrice() external view returns (uint256);

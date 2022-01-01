@@ -57,16 +57,6 @@ contract Treasury is ITreasury, AuthGuard {
         _nativePool = _pool;
     }
 
-    /* ========== MODIFIERS ========== */
-    modifier checkEpoch() {
-        if (IEpoch(epoch).missedEpochs() > 0) {
-            lastPrice = assetToNative(cod, 10**9);
-
-            IEpoch(epoch).updateEpoch();
-        }
-        _;
-    }
-
     /* ========== GUARDIAN ONLY ========== */
     function setTwapPeriod(uint256 _period) external onlyGuardian {
         _twapPeriod = _period;
@@ -89,6 +79,18 @@ contract Treasury is ITreasury, AuthGuard {
     }
 
     /* ========== PUBLIC FUNCTIONS ========== */
+    function updateEpoch() public {
+        if (IEpoch(epoch).missedEpochs(block.timestamp) > 0) {
+            // Update the price
+            lastPrice = assetToNative(cod, 10**9);
+            // Send rewards to the staking contract
+            // ...
+
+            // Update the epoch
+            IEpoch(epoch).updateEpoch();
+        }
+    }
+
     // Obtain the bonus amount in cod
     function calcBonus() public view returns (uint256 bonusCod_) {
         // 1.1 * 10**18
@@ -101,7 +103,8 @@ contract Treasury is ITreasury, AuthGuard {
 
     /* ========== EXTERNAL FUNCTIONS ========== */
     // Deflate
-    function buyBond(uint256 _amount) external checkEpoch {
+    function buyBond(uint256 _amount) external {
+        updateEpoch();
         require(lastPrice < targetPrice, "Cannot buy bond");
 
         // Define contracts (interfaces)
@@ -124,7 +127,8 @@ contract Treasury is ITreasury, AuthGuard {
     }
 
     // Inflate
-    function sellBond(uint256 _amount) external checkEpoch {
+    function sellBond(uint256 _amount) external {
+        updateEpoch();
         require(lastPrice > targetPrice, "Cannot sell bond");
 
         // Checks
