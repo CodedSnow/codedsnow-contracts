@@ -2,14 +2,14 @@
 pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
-import "./interfaces/ICod.sol";
+import "./interfaces/ICShare.sol";
 import "./types/AuthGuard.sol";
 
-contract Cod is ERC20, ICod, AuthGuard {
+contract CShare is ERC20, ICShare, AuthGuard {
     /* ========== STATE VARIABLES ========== */
-    uint256 public initialSupply; // Comes with getter function
-    
     bool private distributed;
+
+    uint256 public initialSupply;
 
     /* ========== CONSTRUCTOR ========== */
     constructor(address _auth)
@@ -24,24 +24,18 @@ contract Cod is ERC20, ICod, AuthGuard {
         // The 9 histories => 9
         // Total hSupply = 484*9 = 4356
 
-        // Supply = 3 * (49532 + 4849) = 6 * (20196) = 121176
-        initialSupply = 121176 * (10**9);
+        // Supply = 3 * (49532 + 4849) = 3 * (20196) = 60588
+        initialSupply = 60588 * (10**9);
     }
 
     /* ========== GOVERNOR ONLY ========== */
-    function distSupply(address _presale) external onlyGovernor {
+    function distSupply(address _treasury, address _team, address _presale) external onlyGovernor {
         require(distributed == false, "Already distributed supply");
         distributed = true;
 
-        _mint(_presale, initialSupply);
-    }
-
-    /* ========== TREASURY ONLY ========== */
-    function mint(address account_, uint256 amount_) external onlyTreasury {
-        _mint(account_, amount_);
-    }
-
-    function burn(address account_, uint256 amount_) external onlyTreasury {
-        _burn(account_, amount_);
+        // Mint the tokens 
+        _mint(_treasury, 4760 * (10**9));
+        _mint(_team, 4220 * (10**9));
+        _mint(_presale, 51608 * (10**9));
     }
 }

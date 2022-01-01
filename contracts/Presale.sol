@@ -1,32 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.11;
 
-import "./interfaces/ICOD.sol";
-import "./interfaces/ITreasury.sol";
+import "./interfaces/ICod.sol";
+import "./interfaces/ICShare.sol";
 
 contract Presale {
     /* ========== STATE VARIABLES ========== */
-    ICOD private immutable cod;
-    address private immutable host;
+    address private immutable cod;
+    address private immutable cshare;
     address private immutable treasury;
 
-    /* ========== CONSTRUCTOR ========== */
-    constructor(address _cod, address _treasury) {
-        cod = ICOD(_cod);
+    bool private didEnd;
+    uint256 public endDate;
 
-        host = msg.sender;
+    /* ========== CONSTRUCTOR ========== */
+    constructor(address _cod, address _cshare, address _treasury, uint256 _endDate) {
+        endDate = _endDate;
+
+        cod = _cod;
+        cshare = _cshare;
         treasury = _treasury;
     }
 
     /* ========== MODIFIERS ========== */
-    modifier onlyHost() {
-        require(msg.sender == host, "Host only.");
-        _;
+    modifier handleEnd() {
+        require(didEnd == false, "Presale ended");
+        if (endDate <= block.timestamp) {
+            didEnd = true;
+            // TODO: Move to liquidity pools
+        } else {
+          _;  
+        }
     }
 
-    // TODO: Implement the presale functions
-    function deposit() public payable {
-        uint256 codAmount = msg.value / (2 * 10**9); // 50%
-        cod.transfer(msg.sender, codAmount);
+    function buyCod() public payable handleEnd {
+        uint256 codAmount = msg.value * 60 / 100; // 60%
+        require(codAmount <= ICod(cod).balanceOf(address(this)), "Presale-Cod depleted");
+
+        ICod(cod).transfer(msg.sender, codAmount);
+    }
+
+    function buyCShare() public payable handleEnd {
+        uint256 cshareAmount = msg.value * 75 / 100; // 75%
+        require(cshareAmount <= ICShare(cshare).balanceOf(address(this)), "Presale-CShare depleted");
+
+        ICShare(cshare).transfer(msg.sender, cshareAmount); 
     }
 }

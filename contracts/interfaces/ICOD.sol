@@ -3,11 +3,11 @@ pragma solidity ^0.8.11;
 
 import "./IERC20.sol";
 
-interface ICOD is IERC20 {
+interface ICod is IERC20 {
     function initialSupply() external view returns (uint256);
 
     /* ========== GOVERNOR ONLY ========== */
-    function distSupply(address _presale, address _team) external;
+    function distSupply(address _presale) external;
 
     /* ========== TREASURY ONLY ========== */
     function mint(address account_, uint256 amount_) external;

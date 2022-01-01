@@ -2,23 +2,22 @@
 pragma solidity ^0.8.11;
 
 interface ITreasury {
-    function canBuyBond() external view returns (bool);
+    event BoughtBond(address indexed to, uint256 _amount);
+    event SoldBond(address indexed to, uint256 _amount);
 
-    function canSellBond() external view returns (bool);
+    function lastPrice() external view returns (uint256);
+
+    function targetPrice() external view returns (uint256);
+
+    function rewardCeiling() external view returns (uint256);
+
+    function rewardRatio() external view returns (uint256);
+
+    function maxDebtRatio() external view returns (uint256);
 
     function calcBonus() external view returns (uint256 bonusCod_);
-
-    function assetToNative(address _tokenIn, uint256 _amountIn) external view returns (uint256 nativeAmount);
 
     function buyBond(uint256 _amount) external;
 
     function sellBond(uint256 _amount) external;
-
-    function lastEpoch() external view returns (uint256);
-
-    function nextEpoch() external view returns (uint256);
-
-    function totalEpochs() external view returns (uint256);
-
-    function getEpochPrice() external view returns (uint256 codPrice_);
 }

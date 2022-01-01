@@ -4,18 +4,19 @@ pragma solidity ^0.8.11;
 import "../interfaces/IAuthority.sol";
 
 abstract contract AuthGuard {
-    /* ========== EVENTS ========== */
-    event AuthorityUpdated(IAuthority indexed authority);
-
     /* ========== VARIABLES ========== */
-    IAuthority public authority;
-
     string private constant UNAUTHORIZED = "UNAUTHORIZED"; // save gas
 
+    IAuthority private authority;
+
     /* ========== Constructor ========== */
-    constructor(IAuthority _authority) {
-        authority = _authority;
-        emit AuthorityUpdated(_authority);
+    constructor(address _authority) {
+        authority = IAuthority(_authority);
+    }
+
+    /* ========== GOVERNOR ONLY ========== */
+    function setAuthority(address _newAuthority) external onlyGovernor {
+        authority = IAuthority(_newAuthority);
     }
 
     /* ========== MODIFIERS ========== */
@@ -34,9 +35,18 @@ abstract contract AuthGuard {
         _;
     }
 
-    /* ========== GOV ONLY ========== */
-    function setAuthority(IAuthority _newAuthority) external onlyGovernor {
-        authority = _newAuthority;
-        emit AuthorityUpdated(_newAuthority);
+    modifier onlyShares() {
+        require(msg.sender == authority.shares(), UNAUTHORIZED);
+        _;
+    }
+
+    modifier onlyStaking() {
+        require(msg.sender == authority.staking(), UNAUTHORIZED);
+        _;
+    }
+
+    modifier forEpoch() {
+        require(msg.sender == authority.shares() || msg.sender == authority.staking(), UNAUTHORIZED);
+        _;
     }
 }

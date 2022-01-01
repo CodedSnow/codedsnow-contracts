@@ -2,14 +2,14 @@
 pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
-import "./interfaces/IbCOD.sol";
+import "./interfaces/ICBond.sol";
 import "./types/AuthGuard.sol";
 
-contract bCOD is ERC20, IbCOD, AuthGuard {
+contract CBond is ERC20, ICBond, AuthGuard {
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _authority)
-        ERC20("Bonded CodedSnow", "bCOD", 9)
-        AuthGuard(IAuthority(_authority))
+    constructor(address _auth)
+        ERC20("Bonded COD", "CBOND", 9)
+        AuthGuard(_auth)
     {}
 
     /* ========== TREASURY ONLY ========== */

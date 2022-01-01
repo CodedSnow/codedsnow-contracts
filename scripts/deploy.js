@@ -3,38 +3,54 @@ import { ethers } from 'hardhat';
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    // ========== BASE LEVEL ==========
-    // Deploy Authority
+    // ========== AUTHORITY ==========
     const AuthContract = await ethers.getContractFactory("Authority");
-    const auth = await AuthContract.deploy(deployer.address);    
+    const auth = await AuthContract.deploy(deployer.address);
 
     console.log(`Deployed Authority: ${auth.address}`);
 
-    // Deploy COD
-    const CodContract = await ethers.getContractFactory("COD");
-    const cod = await CodContract.deploy(auth.address);
-
-    console.log(`Deployed COD: ${cod.address}`);
-
-    // Deploy sCOD
-    const bCodContract = await ethers.getContractFactory("bCOD");
-    const bcod = await bCodContract.deploy(auth.address);
-
-    console.log(`Deployed bCOD: ${bcod.address}`);
-
-    // ========== BUILD LEVEL ==========
-    // TODO: Deploy Treasury
-    const TreasuryContract = await ethers.getContractFactory("Treasury");
-    const treasury = await TreasuryContract.deploy(
-        cod.address,
-        bcod.address,
-        process.env.MATIC_TOKEN,
+    // ========== EPOCH ==========
+    const EpochContract = await ethers.getContractFactory("Epoch");
+    const epoch = await EpochContract.deploy(
         Math.floor(new Date().getTime() / 1000),
         auth.address
     );
-    await auth.pushTreasury(deployer.address, true);
+
+    console.log(`Deployed Epoch: ${epoch.address}`);
+
+    // ========== TOKENS ==========
+    // === COD ===
+    const CodContract = await ethers.getContractFactory("Cod");
+    const cod = await CodContract.deploy(auth.address);
+
+    console.log(`Deployed COD: ${cod.address}`);
+    // === CBOND === 
+    const CBondContract = await ethers.getContractFactory("CBond");
+    const cbond = await CBondContract.deploy(auth.address);
+
+    console.log(`Deployed CBOND: ${cbond.address}`);
+    // === CSHARE ===
+    const CShareContract = await ethers.getContractFactory("CShare");
+    const cshare = await CShareContract.deploy(auth.address);
+
+    console.log(`Deployed CSHARE: ${cshare.address}`);
+
+    // ========== TREASURY ==========
+    const TreasuryContract = await ethers.getContractFactory("Treasury");
+    const treasury = await TreasuryContract.deploy(
+        cod.address,
+        cbond.address,
+        epoch.address,
+        process.env.MATIC_TOKEN,
+        auth.address
+    );
+    await auth.pushTreasury(treasury.address, true);
 
     console.log(`Deployed Treasury: ${treasury.address}`);
+
+    // ========== SHARES ==========
+
+    // ========== STAKING ==========
 
     // ========== ROOFTOP LEVEL ==========
     // Deploy presale
