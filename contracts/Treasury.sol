@@ -84,7 +84,7 @@ contract Treasury is ITreasury, AuthGuard {
             // Update the price
             lastPrice = assetToNative(cod, 10**9);
             // Send rewards to the staking contract
-            // ...
+            // TODO: allocateSeigniorage
 
             // Update the epoch
             IEpoch(epoch).updateEpoch();
