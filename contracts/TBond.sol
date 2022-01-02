@@ -1,16 +1,11 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
 import "./types/ERC20.sol";
-import "./interfaces/ICBond.sol";
 import "./types/AuthGuard.sol";
 
-contract CBond is ERC20, ICBond, AuthGuard {
-    /* ========== CONSTRUCTOR ========== */
-    constructor(address _auth)
-        ERC20("Bonded COD", "CBOND", 9)
-        AuthGuard(_auth)
-    {}
+contract TBond is ERC20, AuthGuard {
+    constructor(address _auth) ERC20("TBOND", "TBOND", 18) AuthGuard(_auth) {}
 
     /* ========== TREASURY ONLY ========== */
     function mint(address account_, uint256 amount_) external onlyTreasury {

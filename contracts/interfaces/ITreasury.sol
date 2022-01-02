@@ -1,25 +1,14 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
 interface ITreasury {
-    event BoughtBond(address indexed to, uint256 _amount);
-    event SoldBond(address indexed to, uint256 _amount);
+    function epoch() external view returns (uint256);
 
-    function updateEpoch() external;
+    function nextEpochPoint() external view returns (uint256);
 
-    function lastPrice() external view returns (uint256);
+    function getTombPrice() external view returns (uint256);
 
-    function targetPrice() external view returns (uint256);
+    function buyBonds(uint256 amount, uint256 targetPrice) external;
 
-    function rewardCeiling() external view returns (uint256);
-
-    function rewardRatio() external view returns (uint256);
-
-    function maxDebtRatio() external view returns (uint256);
-
-    function calcBonus() external view returns (uint256 bonusCod_);
-
-    function buyBond(uint256 _amount) external;
-
-    function sellBond(uint256 _amount) external;
+    function redeemBonds(uint256 amount, uint256 targetPrice) external;
 }

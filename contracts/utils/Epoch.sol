@@ -1,42 +1,85 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.6.0;
 
-import "../interfaces/IEpoch.sol";
-import "../types/AuthGuard.sol";
+import '@openzeppelin/contracts/math/SafeMath.sol';
 
-contract Epoch is IEpoch, AuthGuard {
-    /* ========== STATE VARIABLES ========== */
-    uint256 private _epochTime; // Time between epochs (e.g. 8 hours) (in seconds)
-    uint256 private _lastEpoch; // Unix epoch
+import '../owner/Operator.sol';
 
-    /* ========== CONSTRUCTOR + SETUP ========== */
-    constructor(uint256 _currentTime, address _auth) AuthGuard(_auth) {
-        _epochTime = 18000; // Every 5 hours
-        _lastEpoch = _currentTime;
+contract Epoch is Operator {
+    using SafeMath for uint256;
+
+    uint256 private period;
+    uint256 private startTime;
+    uint256 private lastEpochTime;
+    uint256 private epoch;
+
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(
+        uint256 _period,
+        uint256 _startTime,
+        uint256 _startEpoch
+    ) public {
+        period = _period;
+        startTime = _startTime;
+        epoch = _startEpoch;
+        lastEpochTime = startTime.sub(period);
     }
 
-    /* ========== PRIV ONLY ========== */
-    function setEpochInterval(uint256 _interval) external onlyGuardian {
-        _epochTime = _interval;
+    /* ========== Modifier ========== */
+
+    modifier checkStartTime {
+        require(now >= startTime, 'Epoch: not started yet');
+
+        _;
     }
 
-    function updateEpoch() external forEpoch {
-        _lastEpoch = block.timestamp;
+    modifier checkEpoch {
+        uint256 _nextEpochPoint = nextEpochPoint();
+        if (now < _nextEpochPoint) {
+            require(msg.sender == operator(), 'Epoch: only operator allowed for pre-epoch');
+            _;
+        } else {
+            _;
 
-        emit EpochUpdated(block.timestamp);
+            for (;;) {
+                lastEpochTime = _nextEpochPoint;
+                ++epoch;
+                _nextEpochPoint = nextEpochPoint();
+                if (now < _nextEpochPoint) break;
+            }
+        }
     }
 
-    /* ========== PUBLIC ========== */
-    function missedEpochs(uint256 _from) public view returns (uint256) {
-        return (_from - _lastEpoch) / _epochTime; // Lovely trunication
+    /* ========== VIEW FUNCTIONS ========== */
+
+    function getCurrentEpoch() public view returns (uint256) {
+        return epoch;
     }
 
-    /* ========== EXTERNAL ========== */
-    function currentEpoch() external view returns (uint256) {
-        return _lastEpoch;
+    function getPeriod() public view returns (uint256) {
+        return period;
     }
 
-    function nextEpoch() external view returns (uint256) {
-        return _lastEpoch + _epochTime;
+    function getStartTime() public view returns (uint256) {
+        return startTime;
+    }
+
+    function getLastEpochTime() public view returns (uint256) {
+        return lastEpochTime;
+    }
+
+    function nextEpochPoint() public view returns (uint256) {
+        return lastEpochTime.add(period);
+    }
+
+    /* ========== GOVERNANCE ========== */
+
+    function setPeriod(uint256 _period) external onlyOperator {
+        require(_period >= 1 hours && _period <= 48 hours, '_period: out of range');
+        period = _period;
+    }
+
+    function setEpoch(uint256 _epoch) external onlyOperator {
+        epoch = _epoch;
     }
 }
