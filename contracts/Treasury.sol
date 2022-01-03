@@ -124,6 +124,24 @@ contract Treasury is ITreasury, AuthGuard {
         masonry = _masonry;
     }
 
+    // 1800 --> 1500
+    // 200 --> 150
+    function setExtraFunds(
+        address _daoFund,
+        uint256 _daoFundSharedPercent,
+        address _devFund,
+        uint256 _devFundSharedPercent
+    ) external onlyGovernor {
+        require(_daoFund != address(0), "zero");
+        require(_daoFundSharedPercent <= 3000, "OoR"); // <= 30%
+        require(_devFund != address(0), "zero");
+        require(_devFundSharedPercent <= 1000, "OoR"); // <= 10%
+        daoFund = _daoFund;
+        daoFundSharedPercent = _daoFundSharedPercent;
+        devFund = _devFund;
+        devFundSharedPercent = _devFundSharedPercent;
+    }
+
     /* =================== Modifier =================== */
     modifier checkCondition {
         require(block.timestamp >= startTime, "Treasury: not started yet");
@@ -298,22 +316,6 @@ contract Treasury is ITreasury, AuthGuard {
         require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "OoR"); // [1%, 10%]
         bootstrapEpochs = _bootstrapEpochs;
         bootstrapSupplyExpansionPercent = _bootstrapSupplyExpansionPercent;
-    }
-
-    function setExtraFunds(
-        address _daoFund,
-        uint256 _daoFundSharedPercent,
-        address _devFund,
-        uint256 _devFundSharedPercent
-    ) external onlyGovernor {
-        require(_daoFund != address(0), "zero");
-        require(_daoFundSharedPercent <= 3000, "OoR"); // <= 30%
-        require(_devFund != address(0), "zero");
-        require(_devFundSharedPercent <= 1000, "OoR"); // <= 10%
-        daoFund = _daoFund;
-        daoFundSharedPercent = _daoFundSharedPercent;
-        devFund = _devFund;
-        devFundSharedPercent = _devFundSharedPercent;
     }
 
     function setMaxDiscountRate(uint256 _maxDiscountRate) external onlyGovernor {
