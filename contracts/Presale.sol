@@ -17,16 +17,23 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
     // https://info.uniswap.org/#/polygon/tokens/0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270
     address private constant WRAPPED_MATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
+    // Other contract addresses
     address private immutable cod;
     address private immutable cshare;
     address private immutable treasury;
 
+    // Pool addresses
     address public codPool;
     address public sharePool;
 
-    bool public isOpen;
+    // Balance variables
+    uint256 public codSellBalance;
+    uint256 public shareSellBalance;
     uint256 public codMatic;
     uint256 public shareMatic;
+
+    uint256 public immutable codDiscountPercentage;
+    uint256 public immutable shareDiscountPercentage;
 
     struct MintCallbackData {
         PoolAddress.PoolKey poolKey;
@@ -57,49 +64,78 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
         cshare = _cshare;
         treasury = _treasury;
 
-        isOpen = true;
+        codSellBalance = 15000 * 10e18 * 625 / 1000; // 62.5% of 15000 cod
+        shareSellBalance = 15 * 10e18 * 572 / 1000; // 57.2% of 15 share
+
+        codDiscountPercentage = 600;
+        shareDiscountPercentage = 750;
     }
 
-    function setOpen(bool _open) external onlyGovernor {
-        isOpen = _open;
-    }
-
-    // Buy Cod with MATIC
+    // Buy Cod with MATIC, _amount in COD
     function buyCod(uint256 _amount) external {
-        require(isOpen, "Closed");
-        require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= _amount, "Not enough funds");
-
-        uint256 codAmount = _amount * 140 / 100; // 60%
-        require(codAmount <= IERC20(cod).balanceOf(address(this)), "Presale-Cod depleted");
+        uint256 maticAmount = _amount * codDiscountPercentage / 1000;
+        // Check if user has enough matic
+        require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= maticAmount, "Not enough funds");
+        
+        // Check if presale has enough cod to sell
+        require(_amount > codSellBalance, "Presale-Cod depleted");
 
         // Receive the MATIC
         IERC20(WRAPPED_MATIC).transferFrom(msg.sender, address(this), _amount);
         codMatic += _amount;
 
-        // TODO: Add liquidity
-        // ...
+        addLiquidity(AddLiquidityParams({
+            token0: WRAPPED_MATIC,
+            token1: cod,
+            fee: 3000,
+            recipient: treasury,
+            tickLower: 250000,
+            tickUpper: 250000,
+            amount0Desired: maticAmount,
+            amount1Desired: maticAmount,
+            amount0Min: maticAmount * 75 / 100,
+            amount1Min: maticAmount * 75 / 100
+        }));
 
-        // Transfer the tokens
-        IERC20(cod).transfer(msg.sender, codAmount);
+        // Deduct the balance
+        codSellBalance -= _amount;
+        // Send the tokens
+        IERC20(cod).transfer(msg.sender, _amount);
     }
 
-    // Buy CShare with MATIC
-    function buyCShare(uint256 _amount) external {
-        require(isOpen, "Closed");
-        require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= _amount, "Not enough funds");
-
-        uint256 cshareAmount = _amount * 125 / 100 / 1000; // 75%
-        require(cshareAmount <= IERC20(cshare).balanceOf(address(this)), "Presale-CShare depleted");
+    // Buy Share with MATIC, _amount in SHARE
+    function buyShare(uint256 _amount) external {
+        uint256 maticAmount = _amount * shareDiscountPercentage; // Because percentage is in 1000 we do not have to add any multiplier
+        // Check if user has enough matic
+        require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= maticAmount, "Not enough funds");
+        
+        // Check if presale has enough share to sell
+        require(_amount > shareSellBalance, "Presale-Share depleted");
 
         // Receive the MATIC
         IERC20(WRAPPED_MATIC).transferFrom(msg.sender, address(this), _amount);
         shareMatic += _amount;
 
-        // TODO: Add liquidity
-        // ...
-        
-        // Transfer the tokens
-        IERC20(cshare).transfer(msg.sender, cshareAmount);
+        uint256 shareLiqAmount = maticAmount / 1000;
+
+        addLiquidity(AddLiquidityParams({
+            token0: WRAPPED_MATIC,
+            token1: cshare,
+            fee: 3000,
+            recipient: treasury,
+            tickLower: 250000,
+            tickUpper: 250000,
+            amount0Desired: maticAmount,
+            amount1Desired: shareLiqAmount,
+            amount0Min: maticAmount * 75 / 100,
+            amount1Min: shareLiqAmount * 75 / 100
+        }));
+
+
+        // Deduct the balance
+        shareSellBalance -= _amount;
+        // Send the tokens
+        IERC20(cshare).transfer(msg.sender, _amount);
     }
 
     function uniswapV3MintCallback(uint256 amount0Owed, uint256 amount1Owed, bytes calldata data) external override {

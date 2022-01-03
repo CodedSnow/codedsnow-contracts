@@ -1,4 +1,4 @@
-total_allocation = 5315
+total_allocation = 15
 discount_factor = 0.75
 
 portions = [50]
@@ -33,5 +33,8 @@ lowest_spare_index = min(range(len(spares)), key=spares.__getitem__)
 print("Sell percentage:", portions[lowest_spare_index])
 print("----------------------------------------")
 sell_amount = total_allocation * (portions[lowest_spare_index] / 100)
-print("Pool (COD/MATIC):", sell_amount, '|', sell_amount * 1000)
-print("COD to treasury:", spares[lowest_spare_index])
+print("Pool (cSHARE/MATIC):", sell_amount, '|', sell_amount * 1000)
+print("----------------------------------------")
+print("COD to treasury:", total_allocation - sell_amount)
+print("Waste to treasury:", spares[lowest_spare_index])
+print("Total to treasury:", total_allocation - sell_amount + spares[lowest_spare_index])

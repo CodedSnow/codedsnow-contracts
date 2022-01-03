@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 
 import "./IERC20.sol";
 
-interface ITomb is IERC20 {
+interface ICod is IERC20 {
     function initialSupply() external view returns (uint256);
 
     /* ========== TREASURY ONLY ========== */

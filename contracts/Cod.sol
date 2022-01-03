@@ -4,16 +4,15 @@ pragma solidity ^0.8.11;
 import "./types/ERC20.sol";
 import "./types/AuthGuard.sol";
 
-contract Tomb is ERC20, AuthGuard {
+contract Cod is ERC20, AuthGuard {
     /* ========== STATE VARIABLES ========== */
     uint256 public initialSupply;
     bool private distributed;
 
-    /**
-     * @notice Constructs the TOMB ERC-20 contract.
-     */
-    constructor(address _auth) ERC20("TOMB", "TOMB", 18) AuthGuard(_auth) {
-        _mint(msg.sender, 1 ether);
+    constructor(address _auth) ERC20("CodedSnow", "COD", 18) AuthGuard(_auth) {
+        // 15000 to presale
+        // 9000 to airdrop
+        initialSupply = 24000 * 10e18;
     }
 
     /* ========== TREASURY ONLY ========== */
@@ -30,7 +29,7 @@ contract Tomb is ERC20, AuthGuard {
         require(distributed == false, "Already distributed supply");
         distributed = true;
 
-        _mint(_presale, 151000 * 10e18);
+        _mint(_presale, 15000 * 10e18);
         _mint(_airdrop, 9000 * 10e18);
     }
 }
