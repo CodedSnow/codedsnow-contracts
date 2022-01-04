@@ -43,7 +43,8 @@ contract CShareRewardPool is AuthGuard {
     // The time when cSHARE mining ends.
     uint256 public poolEndTime;
 
-    uint256 public cSharePerSecond = 0.00186122 ether; // 59500 cshare / (370 days * 24h * 60min * 60s)
+    // uint256 public cSharePerSecond = 0.00186122 ether; // 59500 cshare / (370 days * 24h * 60min * 60s)
+    uint256 public cSharePerSecond = 0.00169544 ether; // 54200 cshare / (370 days * 24h * 60min * 60s) => rounded down
     uint256 public runningTime = 370 days; // 370 days
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);

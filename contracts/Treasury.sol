@@ -120,7 +120,7 @@ contract Treasury is ITreasury, AuthGuard {
         _nativePool = _pool;
     }
     
-    function setMasonry(address _masonry) external onlyGovernor {
+    function setStaking(address _masonry) external onlyGovernor {
         masonry = _masonry;
     }
 

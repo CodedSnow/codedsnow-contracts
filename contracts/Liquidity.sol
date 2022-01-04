@@ -78,24 +78,30 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
         require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= maticAmount, "Not enough funds");
         
         // Check if presale has enough cod to sell
-        require(_amount > codSellBalance, "Presale-Cod depleted");
+        require(_amount <= codSellBalance, "Presale-Cod depleted");
 
         // Receive the MATIC
         IERC20(WRAPPED_MATIC).transferFrom(msg.sender, address(this), _amount);
         codMatic += _amount;
 
-        addLiquidity(AddLiquidityParams({
-            token0: WRAPPED_MATIC,
-            token1: cod,
-            fee: 3000,
-            recipient: treasury,
-            tickLower: 250000,
-            tickUpper: 250000,
-            amount0Desired: maticAmount,
-            amount1Desired: maticAmount,
-            amount0Min: maticAmount * 75 / 100,
-            amount1Min: maticAmount * 75 / 100
-        }));
+        if (codPool == address(0)) {
+            codPool = IUniswapV3Factory(UNISWAP_FACTORY).createPool(WRAPPED_MATIC, cod, 3000);
+            IUniswapV3Pool(codPool).initialize(1);
+        } else {
+            // TODO: Add liquidity of previous if
+            addLiquidity(AddLiquidityParams({
+                token0: WRAPPED_MATIC,
+                token1: cod,
+                fee: 3000,
+                recipient: treasury,
+                tickLower: -250000,
+                tickUpper: 250000,
+                amount0Desired: maticAmount,
+                amount1Desired: maticAmount,
+                amount0Min: maticAmount * 75 / 100,
+                amount1Min: maticAmount * 75 / 100
+            }));
+        }
 
         // Deduct the balance
         codSellBalance -= _amount;
@@ -110,7 +116,7 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
         require(IERC20(WRAPPED_MATIC).balanceOf(msg.sender) >= maticAmount, "Not enough funds");
         
         // Check if presale has enough share to sell
-        require(_amount > shareSellBalance, "Presale-Share depleted");
+        require(_amount <= codSellBalance, "Presale-Share depleted");
 
         // Receive the MATIC
         IERC20(WRAPPED_MATIC).transferFrom(msg.sender, address(this), _amount);
@@ -118,18 +124,24 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
 
         uint256 shareLiqAmount = maticAmount / 1000;
 
-        addLiquidity(AddLiquidityParams({
-            token0: WRAPPED_MATIC,
-            token1: cshare,
-            fee: 3000,
-            recipient: treasury,
-            tickLower: 250000,
-            tickUpper: 250000,
-            amount0Desired: maticAmount,
-            amount1Desired: shareLiqAmount,
-            amount0Min: maticAmount * 75 / 100,
-            amount1Min: shareLiqAmount * 75 / 100
-        }));
+        if (sharePool == address(0)) {
+            sharePool = IUniswapV3Factory(UNISWAP_FACTORY).createPool(WRAPPED_MATIC, cshare, 3000);
+            IUniswapV3Pool(codPool).initialize(uint160(sqrt(1 / 1000))); // TODO: Switch this around?
+        } else {
+            // TODO: Add liquidity of previous if
+            addLiquidity(AddLiquidityParams({
+                token0: WRAPPED_MATIC,
+                token1: cshare,
+                fee: 3000,
+                recipient: treasury,
+                tickLower: -250000,
+                tickUpper: 250000,
+                amount0Desired: maticAmount,
+                amount1Desired: shareLiqAmount,
+                amount0Min: maticAmount * 75 / 100,
+                amount1Min: shareLiqAmount * 75 / 100
+            }));
+        }
 
 
         // Deduct the balance
@@ -160,11 +172,16 @@ contract Liquidity is AuthGuard, IUniswapV3MintCallback {
     }
 
     /* ========== PRIVATE FUNCTIONS ========== */
+    function sqrt(uint x) private returns (uint y) {
+        uint z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+    }
     // The caller of this method receives a callback in the form of IUniswapV3MintCallback#uniswapV3MintCallback in which they must pay any token0 or token1 owed for the liquidity
     function addLiquidity(AddLiquidityParams memory params) private returns (uint128 liquidity, uint256 amount0, uint256 amount1, IUniswapV3Pool pool) {
-        // TODO: Check if pool exists
-        // sharePool = IUniswapV3Factory(UNISWAP_FACTORY).createPool(WRAPPED_MATIC, cshare, 3000);
-
         PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({token0: params.token0, token1: params.token1, fee: params.fee});
         pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, poolKey));
 

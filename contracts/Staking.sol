@@ -23,7 +23,7 @@ contract Staking is IStaking, AuthGuard {
     }
 
     /* ========== STATE VARIABLES ========== */
-    ICod private immutable tomb;
+    ICod private immutable cod;
     IShare private immutable share;
     ITreasury private immutable treasury;
 
@@ -42,12 +42,12 @@ contract Staking is IStaking, AuthGuard {
     event RewardAdded(address indexed user, uint256 reward);
 
     constructor(
-        address _tomb,
+        address _cod,
         address _share,
         address _treasury,
         address _auth
     ) AuthGuard(_auth) {
-        tomb = ICod(_tomb);
+        cod = ICod(_cod);
         share = IShare(_share);
         treasury = ITreasury(_treasury);
 
@@ -151,7 +151,7 @@ contract Staking is IStaking, AuthGuard {
         users[msg.sender].epochTimerStart = treasury.epoch(); // reset timer
         users[msg.sender].rewardEarned = 0;
         // Interactions
-        tomb.transfer(msg.sender, reward);
+        cod.transfer(msg.sender, reward);
         emit RewardPaid(msg.sender, reward);
     }
 
@@ -169,7 +169,7 @@ contract Staking is IStaking, AuthGuard {
         });
         snapshotHistory.push(newSnapshot);
         // Interactions
-        tomb.transferFrom(msg.sender, address(this), _amount);
+        cod.transferFrom(msg.sender, address(this), _amount);
         emit RewardAdded(msg.sender, _amount);
     }
 }
